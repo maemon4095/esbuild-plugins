@@ -3,7 +3,7 @@ import * as esbuild from "esbuild";
 
 type Options = { excludedPlugins: string[]; } | { plugins: esbuild.Plugin[]; };
 
-export function workerPlugin(options?: Options): esbuild.Plugin {
+export default function importWebWorker(options?: Options): esbuild.Plugin {
     const name = "import-web-worker";
 
     return {
