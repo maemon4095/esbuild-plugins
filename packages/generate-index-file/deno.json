@@ -1,0 +1,6 @@
+{
+  "name": "@maemon4095/esbuild-plugin-generate-index-file",
+  "version": "0.0.0",
+  "importMap": "../deno.json",
+  "exports": "./mod.ts"
+}
