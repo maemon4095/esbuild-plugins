@@ -1,6 +1,6 @@
 {
   "imports": {
-    "@std/path": "jsr:@std/path@^0.225",
+    "@std/path": "jsr:@std/path@0.225",
     "esbuild": "npm:esbuild@0.21"
   }
 }
