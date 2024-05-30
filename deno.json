@@ -3,6 +3,7 @@
     "@maemon4095-esbuild-x/util-resolver": "jsr:@maemon4095-esbuild-x/util-resolver@0.0.0",
     "@maemon4095/path": "jsr:@maemon4095/path@0.0.0",
     "@std/path": "jsr:@std/path@0.225",
-    "esbuild": "npm:esbuild@0.21"
+    "esbuild": "npm:esbuild@0.21",
+    "postcss": "npm:postcss@8.4"
   }
 }
