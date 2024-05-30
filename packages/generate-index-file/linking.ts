@@ -8,7 +8,7 @@ export type Link = {
     [SourcePathAttribute]: string;
 } & Attributes;
 
-export function link(props: EmbeddingLinkProps): Link {
+export function link(props: LinkProps): Link {
     return {
         ...props,
         [LinkAs]: "link",
@@ -16,7 +16,7 @@ export function link(props: EmbeddingLinkProps): Link {
     };
 }
 
-export function script(props: EmbeddingScriptProps): Link {
+export function script(props: ScriptProps): Link {
     return {
         ...props,
         [LinkAs]: "script",
@@ -24,8 +24,8 @@ export function script(props: EmbeddingScriptProps): Link {
     };
 }
 
-type EmbeddingLinkProps = {
+type LinkProps = {
     rel: string;
 } & Attributes;
 
-type EmbeddingScriptProps = Attributes;
+type ScriptProps = Attributes;
