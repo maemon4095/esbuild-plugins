@@ -18,10 +18,15 @@ type Options = {
     additionalFiles?(result: esbuild.BuildResult<{ metafile: true; }>): File[];
 };
 
-const linkByExtension = {
+const defaultLinkByExtension = {
     ".js": linking.script({ "defer": true }),
     ".css": linking.link({ rel: "stylesheet" })
 };
+
+const defaultMeta: Attributes[] = [
+    { charset: "UTF-8" },
+    { name: "viewport", content: "width=device-width, initial-scale=1.0" }
+];
 
 export default function generateIndexFile(options?: Options): esbuild.Plugin {
     const name = "generate-index-file";
@@ -47,7 +52,7 @@ export default function generateIndexFile(options?: Options): esbuild.Plugin {
             const indexFileDir = path.dirname(indexFilePath);
             const staticFiles = options?.staticFiles ?? [];
             const detemineLink = (() => {
-                const extensionMap: { [ext: string]: linking.Link | undefined; } = options?.linkByExtension ?? linkByExtension;
+                const extensionMap: { [ext: string]: linking.Link | undefined; } = options?.linkByExtension ?? defaultLinkByExtension;
                 const linkFn = options?.link ?? (() => undefined);
                 return (path: string) => {
                     let link = linkFn(path);
@@ -58,7 +63,7 @@ export default function generateIndexFile(options?: Options): esbuild.Plugin {
                 };
             })();
             const additionalFiles = options?.additionalFiles ?? (() => []);
-            const meta = options?.meta ?? [];
+            const meta = options?.meta ?? defaultMeta;
             build.onEnd(async result => {
                 const files = (function* (): Iterator<File> {
                     yield* staticFiles;
@@ -95,9 +100,6 @@ export default function generateIndexFile(options?: Options): esbuild.Plugin {
 
 function createAttributeText(attributes: Attributes): string {
     const entries = Object.entries(attributes);
-    if (entries.length === 0) {
-        return "";
-    }
     let attrs = "";
     for (const [name, value] of entries) {
         if (value === undefined) continue;
@@ -108,7 +110,7 @@ function createAttributeText(attributes: Attributes): string {
             attrs += ` ${name}=${JSON.stringify(value)}`;
         }
     }
-    return attrs + " ";
+    return attrs;
 }
 
 async function createFileLinks(outdir: string, indexFileDir: string, files: Iterator<File>) {
@@ -151,7 +153,9 @@ function createOutputLinks(indexFileDir: string, paths: Iterator<{ path: string,
         const elem = link[linking.LinkAs];
         const attr = link[linking.SourcePathAttribute];
 
-        source += `<${elem} ${attr}=${JSON.stringify(relativePath)}></${elem}>\n`;
+        source += `<${elem} ${attr}=${JSON.stringify(relativePath)}`;
+        source += createAttributeText(link);
+        source += `></${elem}>\n`;
     }
     return source;
 }
