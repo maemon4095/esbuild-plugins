@@ -1,5 +1,5 @@
 {
-  "name": "@maemon4095/esbuild-plugin-data-url-as-external",
+  "name": "@maemon4095-esbuild-x/plugin-data-url-as-external",
   "version": "0.0.0",
   "importMap": "../../deno.json",
   "exports": "./mod.ts"
