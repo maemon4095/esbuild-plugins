@@ -1,0 +1,12 @@
+{
+  "name": "@maemon4095/esbuild-plugins",
+  "version": "0.0.0",
+  "imports": {
+    "@std/path": "jsr:@std/path@^0.225",
+    "esbuild": "npm:esbuild@0.21"
+  },
+  "exports": {
+    "./data-url-as-external": "./src/data-url-as-external/mod.ts",
+    "./import-web-worker": "./src/import-web-worker/mod.ts"
+  }
+}
