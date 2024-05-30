@@ -19,7 +19,8 @@ type Options = {
 };
 
 const linkByExtension = {
-    [".js"]: linking.script({})
+    ".js": linking.script({ "defer": true }),
+    ".css": linking.link({ rel: "stylesheet" })
 };
 
 export default function generateIndexFile(options?: Options): esbuild.Plugin {
@@ -101,6 +102,7 @@ function createAttributeText(attributes: Attributes): string {
     for (const [name, value] of entries) {
         if (value === undefined) continue;
         if (typeof value === "boolean") {
+            if (!value) continue;
             attrs += ` ${name}`;
         } else {
             attrs += ` ${name}=${JSON.stringify(value)}`;
