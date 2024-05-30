@@ -1,9 +1,9 @@
 import * as path from "@std/path";
-import * as esbuild from "esbuild";
+import type { Plugin } from "esbuild";
 
-type Options = { excludedPlugins: string[]; } | { plugins: esbuild.Plugin[]; };
+type Options = { excludedPlugins: string[]; } | { plugins: Plugin[]; };
 
-export default function importWebWorker(options?: Options): esbuild.Plugin {
+export default function importWebWorker(options?: Options): Plugin {
     const name = "import-web-worker";
 
     return {
@@ -31,7 +31,7 @@ export default function importWebWorker(options?: Options): esbuild.Plugin {
             });
 
             build.onLoad({ filter: /.*/, namespace: name }, async args => {
-                const result = await esbuild.build({
+                const result = await build.esbuild.build({
                     ...build.initialOptions,
                     plugins,
                     write: false,
