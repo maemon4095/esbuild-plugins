@@ -1,25 +1,25 @@
 import type { Attributes } from "./mod.ts";
 
-export const EmbedAs: unique symbol = Symbol();
+export const LinkAs: unique symbol = Symbol();
 export const SourcePathAttribute: unique symbol = Symbol();
 
-export type Embedding = {
-    [EmbedAs]: string;
+export type Link = {
+    [LinkAs]: string;
     [SourcePathAttribute]: string;
 } & Attributes;
 
-export function link(props: EmbeddingLinkProps): Embedding {
+export function link(props: EmbeddingLinkProps): Link {
     return {
         ...props,
-        [EmbedAs]: "link",
+        [LinkAs]: "link",
         [SourcePathAttribute]: "href"
     };
 }
 
-export function script(props: EmbeddingScriptProps): Embedding {
+export function script(props: EmbeddingScriptProps): Link {
     return {
         ...props,
-        [EmbedAs]: "script",
+        [LinkAs]: "script",
         [SourcePathAttribute]: "src"
     };
 }

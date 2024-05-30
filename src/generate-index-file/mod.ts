@@ -1,9 +1,9 @@
 import type * as esbuild from "esbuild";
-import * as embedding from "./embedding.ts";
+import * as linking from "./linking.ts";
 import * as pathUtil from "../util/path/mod.ts";
 import * as fs from "node:fs";
 import * as path from "@std/path";
-export { embedding };
+export { linking };
 
 type Options = {
     filepath?: string;
@@ -11,15 +11,15 @@ type Options = {
     title?: string;
     meta?: Attributes[];
     staticFiles?: File[];
-    embedByExtension?: {
-        [ext: `.${string}`]: embedding.Embedding;
+    linkByExtension?: {
+        [ext: `.${string}`]: linking.Link;
     };
-    embed?(path: string): undefined | embedding.Embedding;
+    link?(path: string): undefined | linking.Link;
     additionalFiles?(result: esbuild.BuildResult<{ metafile: true; }>): File[];
 };
 
 const embedByExtension = {
-    [".js"]: embedding.script({})
+    [".js"]: linking.script({})
 };
 
 export default function generateIndexFile(options?: Options): esbuild.Plugin {
@@ -46,8 +46,8 @@ export default function generateIndexFile(options?: Options): esbuild.Plugin {
             const indexFileDir = path.dirname(indexFilePath);
             const staticFiles = options?.staticFiles ?? [];
             const detemineEmbedding = (() => {
-                const extensionMap: { [ext: string]: embedding.Embedding | undefined; } = options?.embedByExtension ?? embedByExtension;
-                const embedFn = options?.embed ?? (() => undefined);
+                const extensionMap: { [ext: string]: linking.Link | undefined; } = options?.linkByExtension ?? embedByExtension;
+                const embedFn = options?.link ?? (() => undefined);
                 return (path: string) => {
                     let embed = embedFn(path);
                     if (embed !== undefined) return embed;
@@ -66,9 +66,9 @@ export default function generateIndexFile(options?: Options): esbuild.Plugin {
                 const outputs = (function* () {
                     const outs = result.metafile!.outputs;
                     for (const p of Object.keys(outs)) {
-                        const embed = detemineEmbedding(p);
-                        if (embed === undefined) continue;
-                        yield { path: p, embed };
+                        const link = detemineEmbedding(p);
+                        if (link === undefined) continue;
+                        yield { path: p, link };
                     }
                 })();
 
@@ -80,8 +80,8 @@ export default function generateIndexFile(options?: Options): esbuild.Plugin {
                     source += "<meta" + createAttributeText(m) + "/>\n";
                 }
 
-                source += await createFileEmbeds(outdir, indexFileDir, files);
-                source += createOutputEmbeds(indexFileDir, outputs);
+                source += await createFileLinks(outdir, indexFileDir, files);
+                source += createOutputLinks(indexFileDir, outputs);
 
                 source += "</head>\n<body></body>\n</html>";
 
@@ -109,7 +109,7 @@ function createAttributeText(attributes: Attributes): string {
     return attrs + " ";
 }
 
-async function createFileEmbeds(outdir: string, indexFileDir: string, files: Iterator<File>) {
+async function createFileLinks(outdir: string, indexFileDir: string, files: Iterator<File>) {
     let source = "";
     while (true) {
         const { done, value: file } = files.next();
@@ -130,24 +130,24 @@ async function createFileEmbeds(outdir: string, indexFileDir: string, files: Ite
         await fs.promises.writeFile(filepath, contents.toString());
 
         const relativePath = path.relative(indexFileDir, filepath);
-        const elem = file.embed[embedding.EmbedAs];
-        const attr = file.embed[embedding.SourcePathAttribute];
+        const elem = file.link[linking.LinkAs];
+        const attr = file.link[linking.SourcePathAttribute];
         source += `<${elem} ${attr}=${JSON.stringify(relativePath)}`;
-        source += createAttributeText(file.embed);
+        source += createAttributeText(file.link);
         source += `></${elem}>\n`;
     }
     return source;
 }
 
-function createOutputEmbeds(indexFileDir: string, paths: Iterator<{ path: string, embed: embedding.Embedding; }>) {
+function createOutputLinks(indexFileDir: string, paths: Iterator<{ path: string, link: linking.Link; }>) {
     let source = "";
     while (true) {
         const { done, value } = paths.next();
         if (done) break;
-        const { path: p, embed } = value;
+        const { path: p, link } = value;
         const relativePath = path.relative(indexFileDir, p);
-        const elem = embed[embedding.EmbedAs];
-        const attr = embed[embedding.SourcePathAttribute];
+        const elem = link[linking.LinkAs];
+        const attr = link[linking.SourcePathAttribute];
 
         source += `<${elem} ${attr}=${JSON.stringify(relativePath)}></${elem}>\n`;
     }
@@ -159,13 +159,13 @@ export type File = FileWithPath | FileWithContents;
 type FileWithPath = {
     name?: string;
     path: string;
-    embed: embedding.Embedding;
+    link: linking.Link;
 };
 
 type FileWithContents = {
     name: string;
     contents: string;
-    embed: embedding.Embedding;
+    link: linking.Link;
 };
 
 export type Attributes = { [name: string]: undefined | string | boolean; };
