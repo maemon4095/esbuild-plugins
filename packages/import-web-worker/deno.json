@@ -1,6 +1,0 @@
-{
-  "name": "@maemon4095-esbuild-x/plugin-import-web-worker",
-  "version": "0.0.1",
-  "importMap": "../../deno.json",
-  "exports": "./mod.ts"
-}
