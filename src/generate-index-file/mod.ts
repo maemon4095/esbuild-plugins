@@ -18,7 +18,7 @@ type Options = {
     additionalFiles?(result: esbuild.BuildResult<{ metafile: true; }>): File[];
 };
 
-const embedByExtension = {
+const linkByExtension = {
     [".js"]: linking.script({})
 };
 
@@ -45,15 +45,15 @@ export default function generateIndexFile(options?: Options): esbuild.Plugin {
             })();
             const indexFileDir = path.dirname(indexFilePath);
             const staticFiles = options?.staticFiles ?? [];
-            const detemineEmbedding = (() => {
-                const extensionMap: { [ext: string]: linking.Link | undefined; } = options?.linkByExtension ?? embedByExtension;
-                const embedFn = options?.link ?? (() => undefined);
+            const detemineLink = (() => {
+                const extensionMap: { [ext: string]: linking.Link | undefined; } = options?.linkByExtension ?? linkByExtension;
+                const linkFn = options?.link ?? (() => undefined);
                 return (path: string) => {
-                    let embed = embedFn(path);
-                    if (embed !== undefined) return embed;
+                    let link = linkFn(path);
+                    if (link !== undefined) return link;
                     const ext = pathUtil.ext(path);
-                    embed = extensionMap[ext];
-                    return embed;
+                    link = extensionMap[ext];
+                    return link;
                 };
             })();
             const additionalFiles = options?.additionalFiles ?? (() => []);
@@ -66,7 +66,7 @@ export default function generateIndexFile(options?: Options): esbuild.Plugin {
                 const outputs = (function* () {
                     const outs = result.metafile!.outputs;
                     for (const p of Object.keys(outs)) {
-                        const link = detemineEmbedding(p);
+                        const link = detemineLink(p);
                         if (link === undefined) continue;
                         yield { path: p, link };
                     }
