@@ -1,6 +1,6 @@
 import type * as esbuild from "esbuild";
 import * as linking from "./linking.ts";
-import * as pathUtil from "../util/path/mod.ts";
+import * as pathUtil from "@maemon4095/path";
 import * as fs from "node:fs";
 import * as path from "@std/path";
 export { linking };
