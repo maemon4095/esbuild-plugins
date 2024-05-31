@@ -124,13 +124,12 @@ async function createFileLinks(outdir: string, indexFileDir: string, files: Iter
                 return { filepath, contents: file.contents };
             } else {
                 const filepath = path.join(outdir, file.name ?? path.basename(file.path));
-                await fs.promises.mkdir(path.dirname(filepath));
                 const contents = await fs.promises.readFile(file.path);
                 return { filepath, contents: contents.toString() };
             }
         })();
 
-        await fs.promises.mkdir(path.dirname(filepath));
+        await fs.promises.mkdir(path.dirname(filepath), { recursive: true });
         await fs.promises.writeFile(filepath, contents.toString());
 
         const relativePath = path.relative(indexFileDir, filepath);
