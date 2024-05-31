@@ -1,29 +1,9 @@
 import * as esbuild from "esbuild";
 import { ImportMap, createResolverFromImportMap, defaultResolve } from "@maemon4095-esbuild-x/util-resolver";
 
-export default function loaderOverride(options: { importMap?: string | ImportMap, loader: { [ext: `.${string}`]: esbuild.Loader; }; }): esbuild.Plugin {
+export default function loaderOverride(options: { importMap?: string | ImportMap, loader?: { [ext: `.${string}`]: esbuild.Loader; }; }): esbuild.Plugin {
     const { importMap, loader } = options;
     const importMapResolver = createResolverFromImportMap(importMap ?? {});
-    const filter = (() => {
-        const extensions = Object.keys(loader);
-        if (extensions.length === 0) {
-            return /^\0$/; // never match
-        }
-
-        let pattern = "^.*(";
-        let first = true;
-        for (const ext of extensions) {
-            if (first) {
-                first = false;
-            } else {
-                pattern += "|";
-            }
-            pattern = `${pattern}\\${ext}`;
-        }
-        pattern += ")$";
-        return new RegExp(pattern);
-    })();
-
     const nsExternal = `${loaderOverride.name}-external`;;
     const nsLocal = `${loaderOverride.name}-local`;;
 
@@ -35,6 +15,30 @@ export default function loaderOverride(options: { importMap?: string | ImportMap
     return {
         name: loaderOverride.name,
         setup(build) {
+            const loaderMap = loader ?? build.initialOptions.loader;
+            if (loaderMap === undefined) {
+                return;
+            }
+            const filter = (() => {
+                const extensions = Object.keys(loaderMap);
+                if (extensions.length === 0) {
+                    return /^\0$/; // never match
+                }
+
+                let pattern = "^.*(";
+                let first = true;
+                for (const ext of extensions) {
+                    if (first) {
+                        first = false;
+                    } else {
+                        pattern += "|";
+                    }
+                    pattern = `${pattern}\\${ext}`;
+                }
+                pattern += ")$";
+                return new RegExp(pattern);
+            })();
+
             build.onResolve({ filter }, args => {
                 const path = importMapResolver(args.path) ?? defaultResolve(args);
                 return {
@@ -49,7 +53,7 @@ export default function loaderOverride(options: { importMap?: string | ImportMap
                 const contents = await Deno.readFile(args.path);
                 return {
                     contents,
-                    loader: loader[ext]
+                    loader: loaderMap[ext]
                 };
             });
 
@@ -60,7 +64,7 @@ export default function loaderOverride(options: { importMap?: string | ImportMap
                 const buf = await response.arrayBuffer();
                 return {
                     contents: new Uint8Array(buf),
-                    loader: loader[ext]
+                    loader: loaderMap[ext]
                 };
             });
         }
