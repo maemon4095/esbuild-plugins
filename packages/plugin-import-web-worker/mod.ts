@@ -25,7 +25,7 @@ export default function importWebWorker(options?: Options): Plugin {
                 }
                 return {
                     namespace: name,
-                    path: args.path.substring(0, args.path.length - 9) + "js",
+                    path: args.path.substring(0, args.path.length - 10) + ".worker.js",
                     pluginData: path.isAbsolute(args.path) ? args.path : path.join(args.resolveDir, args.path)
                 };
             });
