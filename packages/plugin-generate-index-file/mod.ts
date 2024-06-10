@@ -5,15 +5,15 @@ import * as fs from "node:fs";
 import * as path from "@std/path";
 export { linking };
 
-type ElementData = { tag: string, attributes: Attributes, contents: string; };
+type Content = string | { tag: string, attributes: Attributes, contents: string; };
 
 type Options = {
     filepath?: string;
     rootAttributes?: { lang?: string; } & Attributes;
     title?: string;
     meta?: Attributes[];
-    headContents?: ElementData[];
-    bodyContents?: ElementData[];
+    headContents?: Content[];
+    bodyContents?: Content[];
     bodyAttributes?: Attributes,
     staticFiles?: File[];
     linkByExtension?: {
@@ -95,8 +95,8 @@ export default function generateIndexFile(options?: Options): esbuild.Plugin {
                 }
 
                 source += await createFileLinks(outdir, indexFileDir, files);
-                source += embedContents(headContents);
                 source += createOutputLinks(indexFileDir, outputs);
+                source += embedContents(headContents);
 
                 source += "</head>\n<body";
                 source += createAttributeText(bodyAttributes);
@@ -172,11 +172,16 @@ function createOutputLinks(indexFileDir: string, paths: Iterator<{ path: string,
     return source;
 }
 
-function embedContents(elements: ElementData[]) {
+function embedContents(elements: Content[]) {
     let result = "";
 
-    for (const { tag, attributes, contents } of elements) {
-        result += `<${tag}${createAttributeText(attributes)}>${contents}</${tag}>`;
+    for (const content of elements) {
+        if (typeof content === "string") {
+            result += content;
+        } else {
+            const { tag, attributes, contents } = content;
+            result += `<${tag}${createAttributeText(attributes)}>${contents}</${tag}>`;
+        }
     }
 
     return result;
