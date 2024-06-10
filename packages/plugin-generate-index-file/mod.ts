@@ -5,11 +5,16 @@ import * as fs from "node:fs";
 import * as path from "@std/path";
 export { linking };
 
+type ElementData = { tag: string, attributes: Attributes, contents: string; };
+
 type Options = {
     filepath?: string;
     rootAttributes?: { lang?: string; } & Attributes;
     title?: string;
     meta?: Attributes[];
+    headContents?: ElementData[];
+    bodyContents?: ElementData[];
+    bodyAttributes?: Attributes,
     staticFiles?: File[];
     linkByExtension?: {
         [ext: `.${string}`]: linking.Link;
@@ -64,6 +69,9 @@ export default function generateIndexFile(options?: Options): esbuild.Plugin {
             })();
             const additionalFiles = options?.additionalFiles ?? (() => []);
             const meta = options?.meta ?? defaultMeta;
+            const headContents = options?.headContents ?? [];
+            const bodyContents = options?.bodyContents ?? [];
+            const bodyAttributes = options?.bodyAttributes ?? {};
             build.onEnd(async result => {
                 const files = (function* (): Iterator<File> {
                     yield* staticFiles;
@@ -87,9 +95,14 @@ export default function generateIndexFile(options?: Options): esbuild.Plugin {
                 }
 
                 source += await createFileLinks(outdir, indexFileDir, files);
+                source += embedContents(headContents);
                 source += createOutputLinks(indexFileDir, outputs);
 
-                source += "</head>\n<body></body>\n</html>";
+                source += "</head>\n<body";
+                source += createAttributeText(bodyAttributes);
+                source += ">";
+                source += embedContents(bodyContents);
+                source += "</body></html>";
 
                 await fs.promises.mkdir(indexFileDir, { recursive: true });
                 await fs.promises.writeFile(indexFilePath, source);
@@ -157,6 +170,16 @@ function createOutputLinks(indexFileDir: string, paths: Iterator<{ path: string,
         source += `></${elem}>\n`;
     }
     return source;
+}
+
+function embedContents(elements: ElementData[]) {
+    let result = "";
+
+    for (const { tag, attributes, contents } of elements) {
+        result += `<${tag}${createAttributeText(attributes)}>${contents}</${tag}>`;
+    }
+
+    return result;
 }
 
 export type File = FileWithPath | FileWithContents;
