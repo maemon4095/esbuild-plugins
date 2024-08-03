@@ -3,13 +3,11 @@ import * as linking from "./linking.ts";
 import * as pathUtil from "@maemon4095/path";
 import * as fs from "node:fs";
 import * as path from "@std/path";
+
 export { linking };
-
-type Content = string | { tag: string, attributes: Attributes, contents: string; };
-
-type Options = { generate: (result: esbuild.BuildResult<esbuild.BuildOptions>) => GenerationOptions | GenerationOptions[]; };
-
-type GenerationOptions = {
+export type Content = string | { tag: string, attributes: Attributes, contents: string; };
+export type Options = { generate: (result: esbuild.BuildResult<esbuild.BuildOptions>) => GenerationOptions | GenerationOptions[]; };
+export type GenerationOptions = {
     filepath?: string;
     rootAttributes?: { lang?: string; } & Attributes;
     title?: string;
@@ -24,6 +22,18 @@ type GenerationOptions = {
     link?(path: string): undefined | linking.Link;
     additionalFiles?: File[];
 };
+export type File = FileWithPath | FileWithContents;
+export type FileWithPath = {
+    name?: string;
+    path: string;
+    link: linking.Link;
+};
+export type FileWithContents = {
+    name: string;
+    contents: string;
+    link: linking.Link;
+};
+export type Attributes = { [name: string]: undefined | string | boolean; };
 
 const defaultLinkByExtension = {
     ".js": linking.script({ "defer": true }),
@@ -203,18 +213,3 @@ function embedContents(elements: Content[]) {
     return result;
 }
 
-export type File = FileWithPath | FileWithContents;
-
-type FileWithPath = {
-    name?: string;
-    path: string;
-    link: linking.Link;
-};
-
-type FileWithContents = {
-    name: string;
-    contents: string;
-    link: linking.Link;
-};
-
-export type Attributes = { [name: string]: undefined | string | boolean; };
