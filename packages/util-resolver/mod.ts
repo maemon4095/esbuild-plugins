@@ -11,11 +11,11 @@ export function createResolverFromImportMap(importMapOrPath: string | ImportMap)
         const map = JSON.parse(text) as { imports: ImportMap; };
 
         importMapPrefix = path.dirname(importMapOrPath);
-        importMap = { ...importMap, ...(map.imports) };
+        importMap = map.imports;
     }
 
     if (typeof importMapOrPath === "object") {
-        importMap = { ...importMap, ...importMapOrPath };
+        importMap = { ...importMapOrPath };
     }
 
     return (p: string) => {
@@ -31,5 +31,6 @@ export function defaultResolve(args: OnResolveArgs): string {
     if (path.isAbsolute(args.path)) {
         return args.path;
     }
-    return path.join(args.resolveDir, args.path);
+    const dir = args.resolveDir || path.dirname(args.importer);
+    return path.join(dir, args.path);
 }

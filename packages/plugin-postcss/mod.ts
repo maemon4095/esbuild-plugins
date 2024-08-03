@@ -1,6 +1,6 @@
-import postcss, { AcceptedPlugin } from "postcss";
-import * as esbuild from "esbuild";
-import { ImportMap, createResolverFromImportMap, defaultResolve } from "@maemon4095-esbuild-x/util-resolver";
+import postcss, { type AcceptedPlugin } from "postcss";
+import type * as esbuild from "esbuild";
+import { type ImportMap, createResolverFromImportMap, defaultResolve } from "@maemon4095-esbuild-x/util-resolver";
 
 export type Options = {
     plugins?: AcceptedPlugin[];
