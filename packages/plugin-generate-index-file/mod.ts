@@ -7,7 +7,7 @@ export { linking };
 
 type Content = string | { tag: string, attributes: Attributes, contents: string; };
 
-type Options = { generate: (result: esbuild.BuildResult<esbuild.BuildOptions>) => GenerationOptions; };
+type Options = { generate: (result: esbuild.BuildResult<esbuild.BuildOptions>) => GenerationOptions | GenerationOptions[]; };
 
 type GenerationOptions = {
     filepath?: string;
@@ -35,7 +35,7 @@ const defaultMeta: Attributes[] = [
     { name: "viewport", content: "width=device-width, initial-scale=1.0" }
 ];
 
-export default function generateIndexFile(options?: Options): esbuild.Plugin {
+export default function generateIndexFile(options: Options): esbuild.Plugin {
     const name = "generate-index-file";
     return {
         name,
@@ -48,75 +48,84 @@ export default function generateIndexFile(options?: Options): esbuild.Plugin {
             if (outdir === undefined) {
                 throw new Error(`outdir must be set.`);
             }
-            const generate = options?.generate;
+            const generate = options.generate;
 
             build.onEnd(async result => {
-                const options = generate?.(result);
-                const rootAttributes = options?.rootAttributes ?? {};
-                const indexFilePath = (() => {
-                    const p = options?.filepath ?? "index.html";
-                    if (path.isAbsolute(p)) {
-                        return p;
-                    }
-                    return path.join(outdir, p);
-                })();
-                const indexFileDir = path.dirname(indexFilePath);
-                const staticFiles = options?.staticFiles ?? [];
-                const detemineLink = (() => {
-                    const extensionMap: { [ext: string]: linking.Link | undefined; } = options?.linkByExtension ?? defaultLinkByExtension;
-                    const linkFn = options?.link ?? (() => undefined);
-                    return (path: string) => {
-                        let link = linkFn(path);
-                        if (link !== undefined) return link;
-                        const ext = pathUtil.ext(path);
-                        link = extensionMap[ext];
-                        return link;
-                    };
-                })();
-                const additionalFiles = options?.additionalFiles ?? [];
-                const meta = options?.meta ?? defaultMeta;
-                const headContents = options?.headContents ?? [];
-                const bodyContents = options?.bodyContents ?? [];
-                const bodyAttributes = options?.bodyAttributes ?? {};
-
-                const files = (function* (): Iterator<File> {
-                    yield* staticFiles;
-                    yield* additionalFiles;
-                })();
-                const outputs = (function* () {
-                    const outs = result.metafile!.outputs;
-                    for (const p of Object.keys(outs)) {
-                        const link = detemineLink(p);
-                        if (link === undefined) continue;
-                        yield { path: p, link };
-                    }
-                })();
-
-                let source = `<!DOCTYPE html>\n<html`;
-                source += createAttributeText(rootAttributes);
-                source += ">\n<head>\n";
-
-                for (const m of meta) {
-                    source += "<meta" + createAttributeText(m) + "/>\n";
+                let options = generate?.(result) ?? [];
+                if (!Array.isArray(options)) {
+                    options = [options];
                 }
 
-                source += await createFileLinks(outdir, indexFileDir, files);
-                source += createOutputLinks(indexFileDir, outputs);
-                source += embedContents(headContents);
-
-                source += "</head>\n<body";
-                source += createAttributeText(bodyAttributes);
-                source += ">";
-                source += embedContents(bodyContents);
-                source += "</body></html>";
-
-                await fs.promises.mkdir(indexFileDir, { recursive: true });
-                await fs.promises.writeFile(indexFilePath, source);
+                for (const option of options) {
+                    await createIndexFile(result, outdir, option);
+                }
             });
-
         }
     };
 };
+
+async function createIndexFile(result: esbuild.BuildResult<esbuild.BuildOptions>, outdir: string, options: undefined | GenerationOptions) {
+    const rootAttributes = options?.rootAttributes ?? {};
+    const indexFilePath = (() => {
+        const p = options?.filepath ?? "index.html";
+        if (path.isAbsolute(p)) {
+            return p;
+        }
+        return path.join(outdir, p);
+    })();
+    const indexFileDir = path.dirname(indexFilePath);
+    const staticFiles = options?.staticFiles ?? [];
+    const detemineLink = (() => {
+        const extensionMap: { [ext: string]: linking.Link | undefined; } = options?.linkByExtension ?? defaultLinkByExtension;
+        const linkFn = options?.link ?? (() => undefined);
+        return (path: string) => {
+            let link = linkFn(path);
+            if (link !== undefined) return link;
+            const ext = pathUtil.ext(path);
+            link = extensionMap[ext];
+            return link;
+        };
+    })();
+    const additionalFiles = options?.additionalFiles ?? [];
+    const meta = options?.meta ?? defaultMeta;
+    const headContents = options?.headContents ?? [];
+    const bodyContents = options?.bodyContents ?? [];
+    const bodyAttributes = options?.bodyAttributes ?? {};
+
+    const files = (function* (): Iterator<File> {
+        yield* staticFiles;
+        yield* additionalFiles;
+    })();
+    const outputs = (function* () {
+        const outs = result.metafile!.outputs;
+        for (const p of Object.keys(outs)) {
+            const link = detemineLink(p);
+            if (link === undefined) continue;
+            yield { path: p, link };
+        }
+    })();
+
+    let source = `<!DOCTYPE html>\n<html`;
+    source += createAttributeText(rootAttributes);
+    source += ">\n<head>\n";
+
+    for (const m of meta) {
+        source += "<meta" + createAttributeText(m) + "/>\n";
+    }
+
+    source += await createFileLinks(outdir, indexFileDir, files);
+    source += createOutputLinks(indexFileDir, outputs);
+    source += embedContents(headContents);
+
+    source += "</head>\n<body";
+    source += createAttributeText(bodyAttributes);
+    source += ">";
+    source += embedContents(bodyContents);
+    source += "</body></html>";
+
+    await fs.promises.mkdir(indexFileDir, { recursive: true });
+    await fs.promises.writeFile(indexFilePath, source);
+}
 
 function createAttributeText(attributes: Attributes): string {
     const entries = Object.entries(attributes);
