@@ -35,12 +35,12 @@ export type FileWithContents = {
 };
 export type Attributes = { [name: string]: undefined | string | boolean; };
 
-const defaultLinkByExtension = {
+export const defaultLinkByExtension = {
     ".js": linking.script({ "defer": true }),
     ".css": linking.link({ rel: "stylesheet" })
 };
 
-const defaultMeta: Attributes[] = [
+export const defaultMeta: Attributes[] = [
     { charset: "UTF-8" },
     { name: "viewport", content: "width=device-width, initial-scale=1.0" }
 ];
@@ -74,7 +74,7 @@ export default function generateIndexFile(options: Options): esbuild.Plugin {
     };
 };
 
-async function createIndexFile(result: esbuild.BuildResult<esbuild.BuildOptions>, outdir: string, options: undefined | GenerationOptions) {
+async function createIndexFile(result: esbuild.BuildResult<esbuild.BuildOptions>, outdir: string, options: GenerationOptions) {
     const rootAttributes = options?.rootAttributes ?? {};
     const indexFilePath = (() => {
         const p = options?.filepath ?? "index.html";
@@ -86,7 +86,7 @@ async function createIndexFile(result: esbuild.BuildResult<esbuild.BuildOptions>
     const indexFileDir = path.dirname(indexFilePath);
     const staticFiles = options?.staticFiles ?? [];
     const detemineLink = (() => {
-        const extensionMap: { [ext: string]: linking.Link | undefined; } = options?.linkByExtension ?? defaultLinkByExtension;
+        const extensionMap: { [ext: string]: linking.Link | undefined; } = options?.linkByExtension ?? {};
         const linkFn = options?.link ?? (() => undefined);
         return (path: string) => {
             let link = linkFn(path);
@@ -97,7 +97,7 @@ async function createIndexFile(result: esbuild.BuildResult<esbuild.BuildOptions>
         };
     })();
     const additionalFiles = options?.additionalFiles ?? [];
-    const meta = options?.meta ?? defaultMeta;
+    const meta = options?.meta ?? [];
     const headContents = options?.headContents ?? [];
     const bodyContents = options?.bodyContents ?? [];
     const bodyAttributes = options?.bodyAttributes ?? {};
