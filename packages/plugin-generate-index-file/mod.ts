@@ -17,7 +17,7 @@ export type GenerationOptions = {
     bodyAttributes?: Attributes,
     staticFiles?: File[];
     linkByExtension?: LinkByExtension;
-    link?(path: string): undefined | linking.Link;
+    link?(path: string, file: OutputFileMeta): undefined | linking.Link;
     additionalFiles?: File[];
 };
 export type File = FileWithPath | FileWithContents;
@@ -32,6 +32,8 @@ export type FileWithContents = {
     link: linking.Link;
 };
 export type Attributes = { [name: string]: undefined | string | boolean; };
+
+type OutputFileMeta = esbuild.BuildResult<{ metafile: true; }>["metafile"]["outputs"][string];
 
 export const defaultLinkByExtension: LinkByExtension = {
     ".js": linking.script({ "defer": true }),
@@ -90,8 +92,8 @@ async function createIndexFile(result: esbuild.BuildResult<esbuild.BuildOptions>
     const detemineLink = (() => {
         const extensionMap: { [ext: string]: linking.Link | undefined; } = options?.linkByExtension ?? {};
         const linkFn = options?.link ?? (() => undefined);
-        return (path: string) => {
-            let link = linkFn(path);
+        return (path: string, file: OutputFileMeta) => {
+            let link = linkFn(path, file);
             if (link !== undefined) return link;
             const ext = pathUtil.ext(path);
             link = extensionMap[ext];
@@ -110,8 +112,8 @@ async function createIndexFile(result: esbuild.BuildResult<esbuild.BuildOptions>
     })();
     const outputs = (function* () {
         const outs = result.metafile!.outputs;
-        for (const p of Object.keys(outs)) {
-            const link = detemineLink(p);
+        for (const [p, f] of Object.entries(outs)) {
+            const link = detemineLink(p, f);
             if (link === undefined) continue;
             yield { path: p, link };
         }
