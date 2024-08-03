@@ -7,7 +7,9 @@ export { linking };
 
 type Content = string | { tag: string, attributes: Attributes, contents: string; };
 
-type Options = {
+type Options = { generate: (result: esbuild.BuildResult<esbuild.BuildOptions>) => GenerationOptions; };
+
+type GenerationOptions = {
     filepath?: string;
     rootAttributes?: { lang?: string; } & Attributes;
     title?: string;
@@ -20,7 +22,7 @@ type Options = {
         [ext: `.${string}`]: linking.Link;
     };
     link?(path: string): undefined | linking.Link;
-    additionalFiles?(result: esbuild.BuildResult<{ metafile: true; }>): File[];
+    additionalFiles?: File[];
 };
 
 const defaultLinkByExtension = {
@@ -46,36 +48,40 @@ export default function generateIndexFile(options?: Options): esbuild.Plugin {
             if (outdir === undefined) {
                 throw new Error(`outdir must be set.`);
             }
-            const rootAttributes = options?.rootAttributes ?? {};
-            const indexFilePath = (() => {
-                const p = options?.filepath ?? "index.html";
-                if (path.isAbsolute(p)) {
-                    return p;
-                }
-                return path.join(outdir, p);
-            })();
-            const indexFileDir = path.dirname(indexFilePath);
-            const staticFiles = options?.staticFiles ?? [];
-            const detemineLink = (() => {
-                const extensionMap: { [ext: string]: linking.Link | undefined; } = options?.linkByExtension ?? defaultLinkByExtension;
-                const linkFn = options?.link ?? (() => undefined);
-                return (path: string) => {
-                    let link = linkFn(path);
-                    if (link !== undefined) return link;
-                    const ext = pathUtil.ext(path);
-                    link = extensionMap[ext];
-                    return link;
-                };
-            })();
-            const additionalFiles = options?.additionalFiles ?? (() => []);
-            const meta = options?.meta ?? defaultMeta;
-            const headContents = options?.headContents ?? [];
-            const bodyContents = options?.bodyContents ?? [];
-            const bodyAttributes = options?.bodyAttributes ?? {};
+            const generate = options?.generate;
+
             build.onEnd(async result => {
+                const options = generate?.(result);
+                const rootAttributes = options?.rootAttributes ?? {};
+                const indexFilePath = (() => {
+                    const p = options?.filepath ?? "index.html";
+                    if (path.isAbsolute(p)) {
+                        return p;
+                    }
+                    return path.join(outdir, p);
+                })();
+                const indexFileDir = path.dirname(indexFilePath);
+                const staticFiles = options?.staticFiles ?? [];
+                const detemineLink = (() => {
+                    const extensionMap: { [ext: string]: linking.Link | undefined; } = options?.linkByExtension ?? defaultLinkByExtension;
+                    const linkFn = options?.link ?? (() => undefined);
+                    return (path: string) => {
+                        let link = linkFn(path);
+                        if (link !== undefined) return link;
+                        const ext = pathUtil.ext(path);
+                        link = extensionMap[ext];
+                        return link;
+                    };
+                })();
+                const additionalFiles = options?.additionalFiles ?? [];
+                const meta = options?.meta ?? defaultMeta;
+                const headContents = options?.headContents ?? [];
+                const bodyContents = options?.bodyContents ?? [];
+                const bodyAttributes = options?.bodyAttributes ?? {};
+
                 const files = (function* (): Iterator<File> {
                     yield* staticFiles;
-                    yield* additionalFiles(result);
+                    yield* additionalFiles;
                 })();
                 const outputs = (function* () {
                     const outs = result.metafile!.outputs;
@@ -107,6 +113,7 @@ export default function generateIndexFile(options?: Options): esbuild.Plugin {
                 await fs.promises.mkdir(indexFileDir, { recursive: true });
                 await fs.promises.writeFile(indexFilePath, source);
             });
+
         }
     };
 };

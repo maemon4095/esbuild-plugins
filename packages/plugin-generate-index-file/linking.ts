@@ -8,17 +8,17 @@ export type Link = {
     [SourcePathAttribute]: string;
 } & Attributes;
 
-export function link(props: LinkProps): Link {
+export function link(props?: LinkProps): Link {
     return {
-        ...props,
+        ...(props ?? {}),
         [LinkAs]: "link",
         [SourcePathAttribute]: "href"
     };
 }
 
-export function script(props: ScriptProps): Link {
+export function script(props?: ScriptProps): Link {
     return {
-        ...props,
+        ...(props ?? {}),
         [LinkAs]: "script",
         [SourcePathAttribute]: "src"
     };
