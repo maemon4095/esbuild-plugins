@@ -16,9 +16,7 @@ export type GenerationOptions = {
     bodyContents?: Content[];
     bodyAttributes?: Attributes,
     staticFiles?: File[];
-    linkByExtension?: {
-        [ext: `.${string}`]: linking.Link;
-    };
+    linkByExtension?: LinkByExtension;
     link?(path: string): undefined | linking.Link;
     additionalFiles?: File[];
 };
@@ -35,7 +33,7 @@ export type FileWithContents = {
 };
 export type Attributes = { [name: string]: undefined | string | boolean; };
 
-export const defaultLinkByExtension = {
+export const defaultLinkByExtension: LinkByExtension = {
     ".js": linking.script({ "defer": true }),
     ".css": linking.link({ rel: "stylesheet" })
 };
@@ -44,6 +42,10 @@ export const defaultMeta: Attributes[] = [
     { charset: "UTF-8" },
     { name: "viewport", content: "width=device-width, initial-scale=1.0" }
 ];
+
+type LinkByExtension = {
+    [ext: `.${string}`]: linking.Link;
+};
 
 export default function generateIndexFile(options: Options): esbuild.Plugin {
     const name = "generate-index-file";
